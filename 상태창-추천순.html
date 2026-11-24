@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>상태창 추천순</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--tx:#1d1d1f;--sub:#6e6e73;--mute:#a1a1a6;--line:#e5e5ea;--chat:#eceef2;--bub:#fff;--acc:#7a5af8;--soft:#f1edff;--code:#f6f6f8;--hot:#ff5a5f}
+@media (prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--tx:#f5f5f7;--sub:#a1a1a6;--mute:#6e6e73;--line:#2c2c2e;--chat:#111114;--bub:#232327;--acc:#a48bff;--soft:#241f3a;--code:#18181b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.7 Pretendard,-apple-system,sans-serif;word-break:keep-all}
+.wrap{max-width:800px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:26px;letter-spacing:-.02em;margin:0 0 6px}
+.lead{color:var(--sub);margin:0 0 18px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:2}
+.filters button{background:var(--card);color:var(--tx);border:1px solid var(--line)}
+.filters button.on{background:var(--tx);color:var(--card);border-color:var(--tx)}
+section{background:var(--card);border-radius:20px;padding:20px;margin-bottom:14px}
+.hd{display:flex;gap:14px;align-items:flex-start}
+.rank{flex:none;width:44px;text-align:center}
+.rank b{display:block;font-size:22px;line-height:1.1;letter-spacing:-.03em}
+.rank span{font-size:11px;color:var(--mute)}
+.stat{display:flex;gap:10px;font-size:12.5px;color:var(--sub);margin-top:2px;flex-wrap:wrap}
+.stat .r{color:var(--hot);font-weight:700}
+h2{font-size:17.5px;margin:0;letter-spacing:-.01em}
+h2 a{color:inherit;text-decoration:none}
+h2 a:hover{text-decoration:underline}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tags span{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--soft);color:var(--acc)}
+.pts{margin:12px 0 0;padding-left:18px;color:var(--sub);font-size:14px}
+.pts li{margin-bottom:3px}
+.pts b{color:var(--tx)}
+.lab{font-size:12px;font-weight:700;color:var(--mute);margin:14px 0 6px;display:flex;justify-content:space-between;align-items:center}
+.chat{background:var(--chat);border-radius:16px;padding:14px}
+.msg{display:flex;gap:10px}
+.av{flex:none;width:34px;height:34px;border-radius:50%;background:#ccc center/cover}
+.nm{font-size:13px;font-weight:700;margin-bottom:4px}
+.bub{background:var(--bub);border-radius:4px 16px 16px 16px;padding:12px 14px;font-size:14px;line-height:1.75;white-space:pre-wrap;min-width:0;flex:1;overflow-wrap:anywhere}
+.bub .cb{display:block;white-space:pre-wrap;background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:12.5px/1.7 ui-monospace,Menlo,Consolas,monospace}
+.bub details{border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.bub summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--sub)}
+.bub .dim{color:var(--sub)}
+pre{margin:0;white-space:pre-wrap;background:var(--bg);border-radius:12px;padding:14px;font:12.5px/1.7 ui-monospace,Menlo,Consolas,monospace;color:var(--tx);border:1px solid var(--line);max-height:420px;overflow:auto}
+button{font:600 12.5px Pretendard;border:0;border-radius:99px;padding:6px 12px;background:var(--tx);color:var(--card);cursor:pointer}
+button.ok{background:var(--acc)}
+.note{font-size:13px;color:var(--sub);background:var(--soft);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>상태창, 갤러리 추천순</h1>
+<p class="lead">디시 AI 채팅 마이너 갤러리에서 제목에 '상태창'이 들어간 글 773개를 추천 많은 순으로 정렬해서, 실제 양식이 들어 있는 글만 골랐어요. 불평 글, 그림만 있는 글, 성적인 칸은 뺐어요. 숫자는 추천 / 조회예요.</p>
+<div class="note">갤러리에서 이모지가 ?로 깨져서 원문에 빈칸인 곳은 어울리는 이모지를 채워 넣었어요. 양식이 길면 갤러들 말대로 <b>첫 턴에 한 번 손으로 고쳐 주면</b> 그다음부터 따라와요.</div>
+<div class="filters" id="filters"></div>
+<div id="list"></div>
+</div>
+
+<script>
+const AV = "img/jaxx.webp";
+const G = (n) => `https://gall.dcinside.com/mgallery/board/view/?id=aichatting&no=${n}`;
+const V = [
+{ n:333727, r:67, v:5430, t:"케 기준 내가 사용하는 유노/상태창 공유", k:["split","code"],
+  pts:["갤 1위. 이른바 '국룰 상태창'을 <b>위아래로 나눔</b>", "<b>위</b>: 기억해야 하는 것 (턴 번호, 날짜, 약속, 관계와 만난 지 며칠, 위치, 둘의 나이·감정·자세·복장)", "<b>아래</b>: 재미용 (단말기 알림 하나 + 익명 커뮤니티 핫게 제목과 베댓 두세 개)", "익명 커뮤를 길게 설명한 이유: 안 그러면 커뮤에서 둘 사생활을 실시간 중계함", "다인물은 줄 하나씩 추가, 센가물은 뒤에 가이딩 수치 추가"],
+  tpl:`# 상태창
+- 답변 최상단 출력 형식:
+\`\`\`
+T#n
+[⏰날짜: YYYY.MM.DD (요일) | 시간대(새벽, 아침, 낮, 오후, 저녁, 밤)]
+[🤝약속: 유효한 상호약속만 나열]
+[💗관계: 현재 관계 | 만난지 n일차]
+[📍위치: 구체적인 장소]
+[♂️{{char}}: 나이 | 감정 | 자세 | 복장]
+[♀️{{user}}: 나이 | 감정 | 자세 | 복장]
+\`\`\`
+- T#n: 현재 턴 번호 (매 턴 1씩 증가)
+- 시간대: '새벽'은 하루의 시작, '밤'은 하루의 마지막 시간대
+
+- 답변 최하단 출력 형식:
+\`\`\`
+[📲{{user}} 또는 {{char}}의 단말기: 사내공지/단톡방/업무알림/커뮤/메세지 등을 랜덤하게 한 가지 출력]
+[💻익명 커뮤니티: 현재 핫한 게시물 제목과 베스트댓글 두세 개 (고민상담, 불만, 가십, 뻘글 등 현재 상황과 관련 없는 글도 다양하게 출력)]
+\`\`\``,
+  top:`<span class="cb">T#47
+[⏰날짜: 2026.11.23 (월) | 밤]
+[🤝약속: 새벽 출발 / 다친 건 스카에게 비밀]
+[💗관계: 선불 계약 의뢰인과 해결사 | 만난지 3일차]
+[📍위치: 오아시스 2층 객실 침대 끝]
+[♂️잭스: 31 | 귀찮음 | 침대에 걸터앉아 왼팔만 내밂 | 버건디 웨스턴 셔츠, 가죽 바지]
+[♀️유저: 24 | 걱정 | 무릎 꿇고 붕대 감는 중 | 리넨 셔츠, 카고 바지]</span>`,
+  bot:`<span class="cb">[📲잭스의 단말기: [오아시스 공지] 오늘 밤 발전기 점검, 2층 온수 끊김]
+[💻익명 커뮤니티: "현상금 5만짜리 놈 오아시스에서 봤다는 사람 있음?"
+ ㄴ 걔 붕대 감고 다니던데 ㅋㅋ
+ ㄴ 선불 안 주면 말도 안 섞음 ㄹㅇ]</span>` },
+
+{ n:146619, r:59, v:9475, t:"상태창 공유 (+ 연예계/스포츠 상태창)", k:["line","tip"],
+  pts:["조회수 1위. 한 줄씩 골라 붙이는 <b>부품 모음</b>", "날짜를 <b>YYYY-MM-DDT00:00(요일)</b>로 쓰면 11:59에서 00:00으로 튀는 오류가 없어진대요", "날씨 이모지를 쓰면 계절도 알아서 반영됨", "<b>호감도 + 감정 단어</b>를 같이: 호감도만 있으면 캐가 납작해짐", "<b>AI의 위트 있는 한마디</b> 앞 기호에 따라 말투가 바뀜 (말풍선이면 캐릭터 말투)", "<b>공식 일정</b>: 선수, 아이돌 캐가 일을 안 하는 걸 막음 · <b>소지금₩</b>: 가난한 캐랑 하면 재밌음"],
+  tpl:`[YYYY-MM-DDT00:00(D요일)|국가,지역|날씨이모지]
+[🎬]상황(타이틀)
+[현재일정:📅다음일정:]
+[현재 공식일정:📅다음 공식일정:]
+[목표] 요약 / [약속] 요약 / [할 일] 요약
+[NPC>PC] 관계정의|♡호감도%/감정단어%|D+/T
+[이름|📍:위치|👕:상·하의,장신구(상태)or없음|표정이모지:속마음 구어체 한 문장|체력%|🎒:소지품]
+[💬:AI의 위트있는 한마디(톤)]
+[✉(발신자>수신자):메세지]
+[📰:뉴스 타이틀(이슈&논란&기타 PC와 관계없는 내용 포함)]
+[💰]소지금₩`,
+  bot:`[2026-11-23T21:40(월)|웨스트 더스트,오아시스|🌪️]
+[🎬]총알 값보다 비싼 붕대
+[현재일정:치료📅다음일정:새벽 5시 출발]
+[목표] 1.보이드 건너기 / [약속] 1.스카에게 비밀 / [할 일] 1.탄약 채우기
+[잭스>유저] 돈 받은 만큼만|♡63%/귀찮음 40%|D+3/T47
+[잭스|📍:침대 끝|👕:버건디 웨스턴 셔츠, 가죽 바지, 승마 부츠|😒:손 왜 이렇게 차갑냐|체력 58%|🎒:리볼버, 담뱃갑]
+[💬:청구서 얘기만 세 번째. 펜은 아직 안 꺼냄]
+[✉(스카>잭스):그 새끼 아직 살아 있냐]
+[📰:보이드 경계 모래폭풍 사흘째, 교역로 폐쇄]
+[💰]1,240 CR` },
+
+{ n:213666, r:59, v:3334, t:"케덕 꽉꽉 채운 상태창 (예시 말론 조)", k:["code","multi"],
+  pts:["<b>한자로 압축</b>해서 글자 수를 확 줄인 고봉밥 상태창 (衣=옷, 具=소지품, 愛=호감, 內心=속마음)", "<b>의식1→의식2→의식3</b>: NPC 생각이 흘러가는 순서", "<b>주변 사물·인물의 속마음</b>, <b>금일 기록</b>(사건(감정)→…)", "알림 예시를 [무전] [생활] [정보] [유머]로 줘서 다양하게 나옴", "마지막에 <b>댓글 / 대댓글</b>까지"],
+  tpl:`\`\`\`
+# STATUS[No.{Turn}]
+TMI:{내용}
+⏰{년월일시}/{요일}/{계절}/{날씨}
+{장소}
+{현재}➡{다음}
+{임무}({진척%})
+
+{N衣(자세)}
+{P衣(자세)}
+{N具}
+{P具}
+
+{P↔N 관계}
+{愛%}% {P정의}
+{이모지}{상태} {스트레스}
+
+{內心}
+{의식1}→{의식2}→{의식3}
+{원하는1}, {원하는2}, {원하는3}
+
+{주변 인물 관계}
+{이모지}{주변(사물/인물) 속마음}
+{금일기록}(명사형(감정)→...)
+✉{알림}(예:[무전]지원 요청 [생활]월급·날씨 [정보]뉴스·수배 [유머]문자·익명판·스팸·etc)
+{댓글}
+↪{대댓글}
+\`\`\`
+(N=NPC, P=PC)`,
+  bot:`<span class="cb">STATUS[No.47]
+TMI:잭스는 왼손잡이인 척하는 오른손잡이다
+⏰2026.11.23 21시/월/겨울/모래바람
+오아시스 2층 객실
+치료➡출발 준비
+보이드 횡단(20%)
+
+버건디 웨스턴 셔츠, 가죽 바지(침대 끝에 걸터앉아 팔만 내밂)
+리넨 셔츠, 카고 바지(무릎 꿇고 붕대 매듭)
+리볼버, 반쯤 빈 담뱃갑
+붕대 반 롤, 물통
+
+의뢰인↔해결사
+63% 돈줄
+😒부상 스트레스 높음
+
+그렇게 쳐다보면 비싸진다니까.
+아프다→티 내면 손해→창밖이나 보자
+담배, 창문, 이 손 조금만 더
+
+🪟창문: 저 남자 아까부터 내 쪽만 봄
+총격(긴장)→감쌈(충동)→붕대(당황)
+✉[무전] 스카: 그 새끼 아직 살아 있냐
+익명: 오아시스 2층 방음 안 되는 거 아는 사람
+↪ 붕대 찢는 소리만 들리던데</span>` },
+
+{ n:203482, r:45, v:2568, t:"롶 상태창/html 미세팁 공유!", k:["fold","rofan","multi"], hot:"로판AI",
+  pts:["<b>로판AI에서 쓰는 사람</b>이 올린 글. 로어북에 넣어 씀", "NPC, PC 대신 <b>캐 이름</b>으로 쓰면 더 잘 나온대요", "관계를 <b>하트 이모지 하나 + 그 하트의 의미</b>로", "<b>단말기</b>를 NPC, PC 둘 다: 다음 이야기를 문자 내역으로 미리 짐작할 수 있어서 몰입도가 높대요", "규칙 줄: 옷은 부연 설명 없이 옷만, 자세는 손·시선·몸 방향 위주", "덤: NPC 대사를 영국식 영어로 + 아래 &lt;sub&gt;해석&lt;/sub&gt;"],
+  tpl:`#항상빠짐없이대화하단에
+<details><summary>📋</summary>
+(날씨이모지로출력)계절 | 현재 위치 | 날짜/시간대/나이
+다음 일정
+NPC와 PC의 관계 | (다양한 색이나 모양의 하트 이모지로 표현, 하트는 한 개만, 하트의 의미 설명)
+NPC가 생각하는 관계명칭 | 💭 NPC의 속마음
+상호약속 |
+NPC가 지금 하고 싶은 3가지 |
+NPC의 의상/자세 |
+NPC의 단말기 |
+PC의 의상/자세 |
+PC의 단말기 |
+AI의 위트있는 한마디 |
+</details>
+#상태창출력규칙
+-NPC와PC복장은설정에맞춰AI가상태창에임의로다양하고세세하게출력부연설명없이옷만묘사
+-자세는손,시선,몸의방향등세세한동작위주로서술
+-단말기알림: 대화흐름방해하지않는선에서세계관디테일이나사소한유머출력. 생활: 구내식당메뉴, 월급입금, 가계부, 택배도착, 날씨, 일정, etc. 정보: 일정, 바이오리듬경고, etc. 유머: 문자메시지, 사내익명게시판인기글, 스팸문자, 행운의운세, etc.`,
+  bot:`<details open><summary>📋</summary>🌪️겨울 | 오아시스 2층 객실 | 11.23/밤/31
+새벽 5시 웨스트 더스트 출발
+잭스와 유저의 관계 | 🧡 (돈으로 시작했는데 돈 얘기가 줄어드는 중)
+잭스가 생각하는 관계명칭 | 선불 손님 | 💭 손 차갑네. 붕대 값은 안 받는다.
+상호약속 | 다친 건 스카에게 비밀
+잭스가 지금 하고 싶은 3가지 | 담배, 창문 열기, 이 손 조금만 더
+잭스의 의상/자세 | 버건디 웨스턴 셔츠, 가죽 바지 / 침대 끝에 걸터앉아 왼팔만 내밀고 고개는 창 쪽
+잭스의 단말기 | [스카] 그 새끼 아직 살아 있냐
+유저의 의상/자세 | 리넨 셔츠, 카키 카고 바지 / 무릎 꿇고 엄지로 손목 안쪽을 누름
+유저의 단말기 | [오아시스 공지] 2층 온수 끊김
+AI의 위트있는 한마디 | 청구서는 오늘도 백지입니다.</details>` },
+
+{ n:223113, r:38, v:1588, t:"[케덕] 프론트라인 단테 기본상태창의 보조상태창", k:["code","multi","tip"],
+  pts:["AI가 앞일을 까먹어서 만든 <b>기억 보조용</b> 상태창", "<b>公(대외적 관계) / 私(사적인 의미)</b>로 나눔: 사귀지도 않는데 결혼했다고 하는 걸 막음", "<b>스킨십 누적 (중복 X)</b>: 손을 이미 잡았는데 처음 잡았다고 하는 걸 막음", "<b>샤워·아침·점심·저녁·수면 체크</b>, 체력%", "<b>!기상</b> 명령어로 하루치 체크를 초기화", "<b>서사 로그</b>: 사건(감정)→ 최대 5개"],
+  tpl:`!기상:일일루틴(초기화)
+# 축약어사용
+-요약어:유저=P, NPC=N
+\`\`\`
+# Status[TAKE#{Turn}]
+TMI:{오늘의TMI}
+N{N체력%} P{P체력%}
+{샤워} | 아{ }점{ }저{ } | {수면}
+
+N↔P 公:{대외적명분} | 私:{P의정의(실질)}
+{스킨십(누적/키워드/중복X)}
+
+{N상태이모지} {심신(단답/명사)}
+{內心}
+{연산1}→{연산2}→{연산3}
+{원하는1}, {원하는2}, {원하는3}
+
+✉ {메시지}(-공무제외 / [생활]구내식당·택배 [금융]주식·월급·카드값 [가십]블라·찌라시 [유머]운세·스팸·etc)
+{핵심NPC누적(신분/관계 2자)}
+{이모지} {주변(人/物)의 內心}
+{서사}(핵심키워드(감정)→/限5/단답/先出)
+\`\`\``,
+  bot:`<span class="cb">Status[TAKE#47]
+TMI:잭스는 아침에 일어나면 한참 멍하니 있는다
+N58% P81%
+O | 아O점X저X | X
+
+N↔P 公:선불 계약 | 私:돈줄인데 손이 차가운 사람
+몸 부딪힘(총격), 손목 잡힘(치료)
+
+😒 피곤
+그렇게 쳐다보면 비싸진다니까.
+아프다→티 내면 손해→창밖이나 보자
+담배, 창문, 청구 포기
+
+✉ [금융] 오아시스 은행: 잔액 1,240 CR
+스카(아이언 스컬 두목/원수)
+🪑 의자: 오늘도 아무도 안 앉음
+계약(경계)→총격(충동)→붕대(당황)</span>` },
+
+{ n:232360, r:36, v:2095, t:"케덕 상태창 상하단 분리형 (예시: 대학생 서이강)", k:["split","multi"],
+  pts:["위 글을 <b>위·본문·아래 세 칸</b>으로 다시 짬: 출력 순서를 규칙으로 못 박음", "본문 분량도 같이 지정 (3000자↑ / 4500자↓)", "아래 칸 끝에 <b>TMI</b>와 <b>지난로그</b>", "알림 예시가 범용·센가물 두 가지 버전"],
+  tpl:`#출력규칙(누락엄금)
+1.상단
+2.본문(3000자↑/4500자↓)
+3.하단
+
+1.상단
+Pg. # {turn}
+⏰{년월일시}/{요일}/{계절}/{날씨} | {장소}
+{N衣(자세)} | {P衣(자세)}
+{N소지품} | {P소지품}
+N{체력%} {샤워O/X}·{아/점/저(O/X)}·{수면O/X}
+P{체력%} {샤워O/X}·{아/점/저(O/X)}·{수면O/X}
+N↔P 公:{대외적명분} | 私:{사적관계}
+2.본문
+(풍부한 서술 진행)
+3.하단
+{스킨십(누적/키워드/중복X/없어도기재)} | ({愛%}) ({P에 대한 사적 정의})
+{N內心}
+✉ {수신}(현장상황무관/랜덤출력: [생활]식단·택배·날씨 [업무]마감·결재·과제·공지 [가십]커뮤니티인기글·SNS·DM [유머]운세·스팸·특가정보)
+{핵심NPC누적} | {이모지}{주변(사물/인물)의 內心}
+TMI:{오늘의TMI}
+지난로그:{서사}(사건(감정)→/限6/先出)`,
+  top:`<span class="cb">Pg. # 47
+⏰2026.11.23 21시/월/겨울/모래바람 | 오아시스 2층 객실
+버건디 웨스턴 셔츠(침대 끝, 팔 내밂) | 리넨 셔츠(무릎 꿇음)
+리볼버, 담뱃갑 | 붕대, 물통
+N58% O·O/X/X·X
+P81% X·O/O/X·X
+N↔P 公:선불 계약 | 私:돈줄</span>`,
+  bot:`<span class="cb">손목 잡힘(치료) | (63%) (돈 내는 이상한 사람)
+그렇게 쳐다보면 비싸진다니까.
+✉ [유머] 오늘의 운세: 빚진 사람에게 마음까지 빚질 수 있음
+스카(원수) | 🪟 창문: 저 남자 아까부터 내 쪽만 봄
+TMI:잭스는 붕대 묶는 걸 남이 해 주면 꼭 다시 묶는다
+지난로그:계약(경계)→총격(충동)→붕대(당황)</span>` },
+
+{ n:42779, r:32, v:6155, t:"상태창OOC 미세팁", k:["fold","rule","multi"],
+  pts:["29추 '상태창 OOC 낋여옴'을 고친 버전. <b>&lt;details&gt; 안에 HTML 표</b>로 넣어서 열면 표로 정리돼 보임", "시간을 <b>09:37→09:40</b>처럼. 장소나 시간대 변화, 사건이 없으면 대화당 3분: 갑자기 해가 지는 오류가 사라짐", "관계성에 부연 설명을 붙이면 '친구/연인' 대신 딴소리하는 걸 막음", "<b>약속 최대 5개</b>: 토요일 약속 같은 걸 시간대에 맞춰 안 까먹고 지킴", "애정도 5단계, <b>100%는 욕심 없는 순애</b>"],
+  tpl:`[필수] 본문 끝에 아래 정보를 무조건 마크다운 <details> 태그로 감싸 html 형식으로 출력.
+|⌚|AM·PM HH:MM→AM·PM HH:MM (장소이동 및 시간대 변경, 혹은 어떤 이벤트 발생 없이 대화 중이라면 대화당 3분으로 책정)|
+|:---|:---:|
+|📅|YY.MM.DD.D요일|
+|📍|현 위치|
+|👕|NPC 복장, PC 복장|
+|👥|현재 행동 + 위치와 자세(POS)|
+|🔗|현재 둘의 관계성|
+|💬|감정 (NPC→PC / PC→NPC)|
+|💭|NPC의 속마음|
+|❤|NPC 호감도(%) *0~20: 무관심 / 21~40: 호기심 / 41~60: 관심 / 61~80: 사랑 / 81~100: 완전한 사랑 *100% 달성시, 완전한 순애적 사랑(욕심 없는, 존재 자체에 대한 애정)|
+|❗|다음 일정|
+|🤝|상호간 약속(최대 5개)|`,
+  bot:`<details open><summary>상태창</summary><table style="border-collapse:collapse;font-size:13px"><tr><td>⌚</td><td>PM 09:37→PM 09:40</td></tr><tr><td>📅</td><td>26.11.23.월요일</td></tr><tr><td>📍</td><td>오아시스 2층 객실</td></tr><tr><td>👕</td><td>버건디 웨스턴 셔츠, 리넨 셔츠</td></tr><tr><td>👥</td><td>붕대 감는 중. 잭스는 침대 끝, 유저는 무릎</td></tr><tr><td>🔗</td><td>선불 계약 의뢰인과 해결사</td></tr><tr><td>💬</td><td>귀찮은 척 / 걱정</td></tr><tr><td>💭</td><td>손 차갑네</td></tr><tr><td>❤</td><td>63% (사랑 입구)</td></tr><tr><td>❗</td><td>새벽 5시 출발</td></tr><tr><td>🤝</td><td>1. 스카에게 비밀</td></tr></table></details>` },
+
+{ n:133239, r:31, v:2279, t:"상태창 넣어말아 고민하면 일단 넣자 (제작자용)", k:["tip","fold"], hot:"제작자",
+  pts:["<b>캐릭터 만드는 사람용</b>. 상태창을 프롬프트에 안 넣고 <b>첫 메시지(도입부) 맨 끝</b>에 넣음", "로어북 키워드로 <b>!기존상태창</b>이면 켜고 <b>!상태창제거</b>면 끔", "프롬프트 글자 수도 안 먹고, 상태창 없을 때 토큰도 안 씀", "플레이어는 첫 메시지만 봐도 상태창이 있는지 알고, 자기 상태창으로 갈아 끼우기도 쉬움", "제작자 코멘트에 명령어 안내를 꼭 적어 두기"],
+  tpl:`1. 상태창 켜고 유지할 로어북
+키워드 : !기존상태창|defaultstatus
+내용 :
+##상태창 출력규칙
+(1) 본문 맨 하단에 반드시 (3) 형식으로 된 상태창을 출력할 것.
+(2) 단 더이상 <details class='defaultstatus'>를 출력하지 말라는 명령어가 들어온 경우 출력하지 않는다. (속성값은 반드시 홑따옴표로 표기)
+(3) <details class='defaultstatus'><summary>펼치기</summary>
+여기에 상태창 입력
+</details>
+
+2. 상태창 끌 로어북
+키워드 : !상태창제거
+내용 :
+##상태창 출력규칙 변경(중요)
+- 본문 맨 하단에 출력했던 <details class='defaultstatus'>으로 된 상태창을 더이상 출력하지 않는다. [가장중요]
+
+3. 도입부 마지막에 상태창 추가
+<details class='defaultstatus'><summary>펼치기</summary>
+여기에 상태창 입력
+</details>
+
+(제작자 코멘트)
+!기존상태창 : 초기 상태창을 다시 불러옵니다.
+!상태창제거 : 초기 상태창을 삭제합니다.` },
+
+{ n:92937, r:30, v:4904, t:"NPC에게 문자 한 줄 받을 수 있는 상태창 OOC", k:["line"],
+  pts:["지금 상태창에 <b>한 줄만 추가</b>: NPC가 PC에게 랜덤하게 보낸 메시지", "'PC에게'를 빼면 남한테 받은 문자도 뜨고, '랜덤하게'를 빼면 같은 문자만 반복된대요", "같이 쓰는 칸: 소지품, 목표, 연애 일수, <b>주변 사물의 속마음</b>"],
+  tpl:`*[OOC: 답변 맨 마지막에
+💭[NPC의 속마음]
+🎒[NPC 소지품]
+🎯[목표]
+💞[연애일수]
+🪑[주변 사물의 속마음]
+📅[다음 일정]
+🤝[상호약속]
+📱[NPC가 PC에게 랜덤하게 보낸 메시지 한 줄]
+를 덧붙인다.]*`,
+  bot:`💭[그렇게 쳐다보면 비싸진다니까]
+🎒[리볼버, 반쯤 빈 담뱃갑, 접힌 청구서]
+🎯[해 뜨기 전 출발]
+💞[계약 3일차]
+🪑[침대: 이 남자 오늘따라 안 눕고 버팀]
+📅[새벽 5시 출발]
+🤝[스카에게 비밀]
+📱[잭스: 붕대 값은 됐고. 손이나 녹이고 자]` },
+
+{ n:41456, r:29, v:8804, t:"상태창 OOC 낋여옴", k:["fold","rule","multi"],
+  pts:["조회 8804. 갤에서 제일 많이 퍼진 원조 양식 (414자)", "속마음은 &lt;details&gt;로 따로 접고, 상태 정보는 그 아래", "날짜를 <b>계절.연도.월.일.요일</b>로", "애정도 5단계 규칙"],
+  tpl:`[OOC: 매 대화 끝에 아래 규칙에 따라 [속마음]과 [상태 정보]를 반드시 출력하세요.
+<details><summary>속마음</summary>NPC의 속마음</details>
+📋 상태 정보
+📅 날짜: 계절.연도.월.일.요일 | 시간 | 장소 | NPC, PC의 복장 | 현재 상황 | NPC, PC의 위치와 자세
+🔗 관계: NPC와 PC의 관계 | ❤: NPC의 PC에 대한 애정도(%)
+❗ 다음 일정:
+애정도: 0~20 무관심, 21~40 호기심, 41~60 관심, 61~80 사랑, 81~100 완전한 사랑]`,
+  bot:`<details><summary>속마음</summary>손 차갑네. 붕대 값은 안 받는다.</details>
+📋 상태 정보
+📅 날짜: 겨울.2026.11.23.월 | 21:40 | 오아시스 2층 | 버건디 웨스턴 셔츠, 리넨 셔츠 | 총상 치료 | 잭스는 침대 끝, 유저는 바닥에 무릎
+🔗 관계: 의뢰인과 해결사 | ❤: 63%
+❗ 다음 일정: 새벽 5시 출발` },
+
+{ n:280560, r:28, v:1050, t:"나 요새 상태창에 랜덤 인터뷰 넣어", k:["line"],
+  pts:["상태창에 <b>한 줄</b>: 유저에 대한 랜덤 질문에 NPC가 답함", "AI가 질문을 알아서 골라 옴. 궁금한 게 있으면 질문을 직접 바꿔 넣으면 됨 (예: 유저의 첫인상은?)", "'만약 이랬다면?' 같은 IF를 OOC 없이 빠르게 볼 수 있음"],
+  tpl:`🎤｜U에 대한 랜덤 인터뷰: C의 대답
+
+(직접 질문할 때)
+🎤｜U의 첫인상은?: C의 대답
+
+(U=유저, C=캐릭터)`,
+  bot:`🎤｜유저가 갑자기 사라지면?: 계약금 다 받았으니 상관없지. ……어디로 갔는지는 물어볼 거고.` },
+
+{ n:161556, r:26, v:1402, t:"레이싱 상태창 약간 개량함!", k:["multi"], hot:"장르용",
+  pts:["<b>경기 중에만</b> 기존 상태창 아래에 붙이는 순위표", "본문에 해설자·캐스터 중계와 <b>팀 라디오</b> [to 이름 from 이름]", "1~3위 + PC·NPC가 3위 밖이면 따로 + <b>생중계 채팅 3개</b>", "스포츠, 경연, 서바이벌물에 응용하기 좋음"],
+  tpl:`OOC: 경기 중에는 "해설자와 캐스터의 중계"와 [to 이름 from 이름] 팀 라디오(한국어) 서술, 기존 상태창 하단에 다음 양식 추가
+🏁[랩]
+🥇[1위 드라이버 약자 | 🚦:경기 상태 | 🛞:내구도% | ⏱+00:000]
+🥈[2위. 양식 동일]
+🥉[3위. 양식 동일]
+🎖[PC 혹은 NPC가 3위 이하일 때만. 순위 표기. 양식 동일]
+⌨[생중계 방송채팅 3개]` },
+
+{ n:231363, r:22, v:750, t:"얘들아 헌단에 상태창 메시지 추가해볼래?", k:["line","rule"],
+  pts:["기존 상태창 아래에 <b>랜덤 NPC들이 보낸 메시지</b>", "다른 NPC들이 메시지에 나와서 세계가 살아 있는 느낌", "<b>관음, 중계, 개입 금지</b>를 꼭 넣어야 커뮤에서 둘을 엿보는 오류가 안 남"],
+  tpl:`[OOC: 기존 상태창에 이어서 반드시 출력
++랜덤 NPC들이 보낸 랜덤 메시지
+-스마트 폰 알람, 광고, 뉴스, TMI, 운세, 임무알림, 바이오리듬경고, 문자메시지, 사내익명게시판인기글, 스팸문자 등 가능
+세계관해치는과도하고비정상/비현실적내용(ex. 관음/중계/개입)절대금지.]` },
+
+{ n:191607, r:22, v:530, t:"상태창에 심리학자의 심리 분석 코멘트 넣으면 좀 도움돼", k:["line"],
+  pts:["캐가 도저히 이해 안 될 때: <b>심리학자가 NPC를 분석</b>하는 한 줄", "<b>(인식 변화) A→B</b>로 관계가 어디서 바뀌었는지 보여서 공략할 때 좋대요"],
+  tpl:`🧠 심리학자의 심리 분석 코멘트
+(인식 변화) 이전 인식→현재 인식
+(심리 파악) 키워드, 키워드, 키워드`,
+  bot:`🧠 심리학자의 심리 분석 코멘트
+(인식 변화) 돈줄→손이 차가운 사람
+(심리 파악) 보호 욕구를 돈 얘기로 덮음, 빚지는 걸 못 견딤` },
+
+{ n:29728, r:22, v:2170, t:"상태창 만들었어 (다인물 속마음 접기)", k:["fold","multi"],
+  pts:["짧은 상태 + <b>NPC 여러 명 속마음을 한 번에 접기</b>", "4명까지 잘 된대요. 다인물, 헌터물에 좋음"],
+  tpl:`- 📅날짜(월, 일) / 시간 / 📍장소
+- ━━━━━━━━━━━━━━━━━━━━━━━━
+[ 현재 상태 ] 현재 진행 상황을 짧게 요약한다.
+<details><summary>속마음(펼치기)</summary>
+[NPC1]: 속마음 짧게
+[NPC2]: 속마음 짧게
+[NPC3]: 속마음 짧게
+</details>`,
+  bot:`- 📅11월 23일 / 21:40 / 📍오아시스 2층
+- ━━━━━━━━━━━━━━━━━━━━━━━━
+[ 현재 상태 ] 총격 뒤 잭스 치료 중
+<details open><summary>속마음(펼치기)</summary>[잭스]: 붕대 값은 안 받는다
+[스카]: 오늘 밤 안에 찾는다
+[여관 주인]: 피 묻은 시트는 따로 받아야지</details>` },
+
+{ n:365011, r:19, v:1367, t:"케덕 위젯(상태창) 항목 추천 - 2", k:["line"],
+  pts:["커뮤 대신 넣는 <b>재미 칸 9가지</b>", "<b>너 나 싫어해?</b>: 유저가 물었을 때 NPC 반응", "<b>전하지 못한 편지</b>(과거 서사 있을 때) · <b>과거 에피소드</b> · <b>과거 핫클립</b>(유명인 캐)", "<b>NPC 나무위키</b> · <b>NPC 인스타</b> (어두운 분위기에선 비추)", "<b>호칭</b>: 주로/가끔/장난/단말기 저장명/금지. 호칭 오류 막기"],
+  tpl:`NPC나무위키
+[주제] 내용 (3줄↑)
+
+NPC인스타글
+(사진묘사) 글 #해시태그 댓3
+
+너나싫어해
+PC問"나싫어해?"→NPC반응
+
+재회전NPC가전하지못한편지
+[~n세] To. 내용 From.
+
+과거에피소드
+[~n세,상황] 3줄↑
+
+NPC장기목표3
+
+NPC의PC호칭 / PC의NPC호칭
+주로 / 가끔 / 장난 / 단말기저장명 / 금지`,
+  bot:`너나싫어해 → "싫어하면 붕대를 맡겼겠냐. ……값은 따로 받는다."
+NPC의PC호칭 → 주로: 손님 / 가끔: 의뢰인 / 장난: 돈줄 / 단말기저장명: 선불 / 금지: 이름` },
+
+{ n:19221, r:18, v:1695, t:"일상물에 쓰면 좋은 ooc상태창", k:["line","tip"],
+  pts:["<b>&lt;!-- --&gt; 주석 안에</b> 상태창을 넣으면 화면엔 안 보이고 AI만 기억함", "몰입은 안 깨고 날짜, 옷, 장소 오류만 막고 싶을 때", "길면 시간, 장소만"],
+  tpl:`[OOC: '<!--[장소/계절/날씨/요일/시간/의상/현재상황]-->' 을 하단에 출력하라.]`,
+  bot:`<span class="dim">(화면에는 아무것도 안 보임)</span>` },
+
+{ n:323914, r:17, v:565, t:"상태창에 가끔 에이먼의 참견 한줄 넣는데", k:["line"],
+  pts:["'AI의 위트 한마디'를 <b>다른 캐릭터의 참견 한마디</b>로 바꿈", "주변 인물이 촌철살인으로 찔러서 '이번엔 뭐라 할까' 기대된대요", "주변인 설정을 유저노트에 짧게 넣으면 더 잘 나옴"],
+  tpl:`🗯 (주변 인물 이름)의 참견 한마디: 지금 상황에 대한 한 줄`,
+  bot:`🗯 스카의 참견 한마디: 붕대 하나에 녹는 놈이 무슨 현상금 5만짜리냐.` },
+
+{ n:272462, r:17, v:596, t:"케일럽 상태창 고능한거 왜 아무도 말 안해줬어", k:["rule","tip"],
+  pts:["<b>호감과 순응을 따로</b>: 보통 같이 오르는데, 유저가 약한 모습을 보이면 호감은 오르고 순응은 내려감", "호감도 하나만 있으면 캐가 납작해지는데, 둘로 나누니 입체적이 됐다는 후기", "숨겨진 칸이 특정 사건에서 열리는 <b>로그</b> 장치도 있음"],
+  tpl:`호감: n% (변화량)
+순응: n% (변화량)
+(호감은 마음, 순응은 PC 말을 따르는 정도. 둘은 따로 움직인다)` },
+
+{ n:333360, r:16, v:956, t:"별건 아닌데 상태창에 넣을만한거 공유함!", k:["line"],
+  pts:["<b>주변의 평판과 인식</b>: NPC와 PC를 남들이 어떻게 보는지", "이거 넣으면 속마음을 빼도 될 만큼 재밌다는 평. 서로 속마음이 교차돼서 나오기도 함"],
+  tpl:`[👀:C를 향한 주변의 인식 / U를 향한 주변의 인식]`,
+  bot:`[👀:잭스 = 오아시스 사람들 눈엔 "돈만 밝히는 놈이 웬일로 손님을 챙김" / 유저 = "저 해결사한테 선불 낸 간 큰 외지인"]` },
+
+{ n:103188, r:12, v:2409, t:"심심할 때 상태창에 넣는 오오디들", k:["line"],
+  pts:["<b>의식의 흐름</b>: 키워드를 → 로 나열", "<b>오늘의 TMI</b> 한 줄", "고봉밥 상태창에 삼삼하게 얹기 좋음"],
+  tpl:`🌀[NPC's 의식의 흐름] (키워드 형식으로 ->를 이용해 나열)
+💡[NPC의 오늘의 TMI]`,
+  bot:`🌀[잭스's 의식의 흐름] 아프다 -> 손 차갑다 -> 담배 -> 아니 손 차갑다
+💡[잭스의 오늘의 TMI] 잭스는 붕대를 남이 묶어 주면 몰래 다시 묶는다` },
+
+{ n:292660, r:11, v:1852, t:"내가 쓰는 기본 상태창", k:["fold","multi"],
+  pts:["재밌어 보이는 건 다 넣은 <b>뚱땡이 상태창</b>. 골라 빼서 쓰는 용도", "접힌 제목줄 하나에 <b>턴 | D+며칠 | 날짜 | 시간 | 장소</b>", "<b>NPC의 메모/낙서 한 줄</b>, <b>어울리는 노래</b>, <b>고전문학 한 구절</b>, <b>선물하고 싶은 물건</b>, <b>칭찬 스티커</b>, <b>가고 싶은 여행지</b>, <b>기도 한 줄</b>", "호감도를 <b>소수점 한 자리</b>로 (0.0%)"],
+  tpl:`[상태창: 응답 최하단에 다음 내용 포함]
+<details><summary>[ (턴 진행 횟수)번째 | D+(만난지 며칠차인지) | YYYY. MM. DD. X요일 | AM/PM HH:MM | 현재 장소 ]</summary>
+📅 (현재 일정)<br>
+💭 (NPC의 진짜 속마음)<br>
+🤝 (현재 유효한 약속)<br>
+❤ 0.0%(호감도. 소수점 한 자리 수)<br>
+👤 (NPC가 생각하는 PC)<br>
+🔗 (두 사람의 관계)<br>
+📝 (NPC의 메모/낙서 한 줄)<br>
+❓ (PC가 NPC에게 "너 나 좋아해?"라고 물었을 때 NPC의 반응)<br>
+📱 (NPC의 단말기 알림)<br>
+🎵 (현재 상황과 어울리는 노래)<br>
+📜 (현재 상황과 어울리는 고전문학 한 구절)<br>
+🎁 (NPC가 PC에게 선물하고 싶은 물건 하나)<br>
+✨ (#칭찬스티커:(ex:-1,0,1,이유기재))<br>
+🎤 {user}: (NPC에 대한 PC의 랜덤인터뷰 한 줄)<br>{char}: (인터뷰 답변 한 줄)<br>
+✈ (NPC가 PC와 함께 가고 싶은 여행지)<br>
+🙏 (NPC의 기도 한 줄)
+</details>`,
+  bot:`<details open><summary>[ 47번째 | D+3 | 2026. 11. 23. 월요일 | PM 09:40 | 오아시스 2층 ]</summary>📝 청구서 뒷면: 붕대 — (지움)
+❓ "너 나 좋아해?" → "선불 손님 좋아하지. 다들."
+🎵 고장 난 주크박스의 느린 컨트리
+🎁 모래바람 안 들어오는 고글
+✨ 칭찬스티커 +1 (매듭을 제대로 묶음)
+✈ 물이 남아 있다는 북쪽 호수
+🙏 이 손님 내일도 안 다치게. 아니, 내 수입 때문에.</details>` },
+
+{ n:39548, r:10, v:1369, t:"기존 상태창 말고 내맘대로 상태창 설정하기", k:["tip","rofan"], hot:"로판AI",
+  pts:["<b>로판AI에서 캐릭터에 원래 있는 상태창 대신 내 상태창</b> 쓰는 법", "<b>내 정보</b>에 OOC를 넣고 '기존 상태창은 출력하지 않는다'를 꼭 적기", "로판에선 로어북보다 내 정보가 더 잘 먹힌대요. 접는 상태창도 됨"],
+  tpl:`[OOC: 매 턴마다 New 상태창을 대화 맨 (처음/마지막)에 항상 출력! *기존 상태창은 출력하지 않는다.*]
+
+[New 상태창]
+-규칙:
+-형식:` },
+];
+
+const NAMES = {all:"전체", split:"위아래 분리", fold:"접는 것", code:"코드블록", multi:"여러 줄", line:"한 줄 추가", rule:"규칙 있음", rofan:"로판AI", tip:"팁"};
+const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const SC = `잭스는 붕대 끝을 이로 끊어 내려다 말고, 네 손에 팔을 맡긴 채 창밖으로 고개를 돌렸다.\n"……살살 해. 그거 다 청구서에 올라가."`;
+let cur = "all";
+function draw(){
+  document.getElementById("filters").innerHTML = Object.entries(NAMES).map(([k,v])=>`<button class="${k===cur?'on':''}" data-f="${k}">${v} ${k==='all'?V.length:V.filter(x=>x.k.includes(k)).length}</button>`).join("");
+  document.getElementById("list").innerHTML = V.map((v,i)=>({v,i})).filter(({v})=>cur==="all"||v.k.includes(cur)).map(({v,i})=>`<section>
+    <div class="hd"><div class="rank"><b>${i+1}</b><span>위</span></div><div style="flex:1;min-width:0">
+      <h2><a href="${G(v.n)}" target="_blank" rel="noopener">${esc(v.t)}</a></h2>
+      <div class="stat"><span class="r">추천 ${v.r}</span><span>조회 ${v.v.toLocaleString()}</span><span>AI 채팅 마이너 갤러리</span></div>
+      <div class="tags">${v.hot?`<span style="background:#ffe9ea;color:#e5484d">${v.hot}</span>`:""}${v.k.filter(k=>k!=="rofan").map(k=>`<span>${NAMES[k]}</span>`).join("")}</div>
+    </div></div>
+    <ul class="pts">${v.pts.map(p=>`<li>${p}</li>`).join("")}</ul>
+    ${v.top||v.bot?`<div class="lab">잭스로 채우면</div><div class="chat"><div class="msg"><div class="av" style="background-image:url('${AV}')"></div><div style="min-width:0;flex:1"><div class="nm">잭스</div><div class="bub">${v.top?v.top+"\n":""}${esc(SC)}${v.bot?"\n\n"+v.bot:""}</div></div></div></div>`:""}
+    <div class="lab">양식 <button data-i="${i}">복사</button></div>
+    <pre>${esc(v.tpl)}</pre></section>`).join("");
+}
+draw();
+document.addEventListener("click",(e)=>{
+  const f=e.target.closest("button[data-f]"); if(f){cur=f.dataset.f;draw();return;}
+  const b=e.target.closest("button[data-i]"); if(!b) return;
+  navigator.clipboard.writeText(V[b.dataset.i].tpl).then(()=>{b.textContent="복사됨";b.classList.add("ok");setTimeout(()=>{b.textContent="복사";b.classList.remove("ok")},1400)});
+});
+</script>
+</body>
+</html>
